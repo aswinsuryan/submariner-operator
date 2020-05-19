@@ -22,7 +22,7 @@ import (
 	"time"
 
 	rbacv1 "k8s.io/api/rbac/v1"
-	errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientset "k8s.io/client-go/kubernetes"
@@ -77,32 +77,7 @@ func Ensure(status *cli.Status, config *rest.Config, repo string, version string
 			return err
 		}
 	} else {
-		// Update CoreDNS deployment
-		deployments := clientSet.AppsV1().Deployments("kube-system")
-		retryErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			deployment, err := deployments.Get("coredns", metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-			for i, container := range deployment.Spec.Template.Spec.Containers {
-				if container.Name == "coredns" {
-					deployment.Spec.Template.Spec.Containers[i].Image = repo + coreDNSImage + ":" + version
-					status.QueueSuccessMessage("Updated CoreDNS deployment")
-				}
-			}
-			// Potentially retried
-			_, err = deployments.Update(deployment)
-			return err
-		})
-		if retryErr != nil {
-			return fmt.Errorf("Error updating CoreDNS deployment: %v", retryErr)
-		}
-
-		// Update CoreDNS ConfigMap
-		err = updateCoreDNSConfigMap(status, clientSet)
-		if err != nil {
-			return err
-		}
+		return nil
 	}
 
 	return nil
