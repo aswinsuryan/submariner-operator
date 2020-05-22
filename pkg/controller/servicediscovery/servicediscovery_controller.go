@@ -2,11 +2,10 @@ package servicediscovery
 
 import (
 	"context"
+	stderr "errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/types"
 	"strconv"
 	"strings"
-	stderr "errors"
 
 	submarinerv1alpha1 "github.com/submariner-io/submariner-operator/pkg/apis/submariner/v1alpha1"
 	"github.com/submariner-io/submariner-operator/pkg/controller/helpers"
@@ -15,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
@@ -30,11 +30,14 @@ import (
 var log = logf.Log.WithName("controller_servicediscovery")
 
 const (
-	componentName          = "submariner-lighthouse"
+	componentName         = "submariner-lighthouse"
+	deploymentName        = "submariner-lighthouse-agent"
+	lighthouseCoreDNSName = "submariner-lighthouse-coredns"
+)
+
+const (
 	serviceDiscoveryImage  = "lighthouse-agent"
-	deploymentName         = "submariner-lighthouse-agent"
 	lighthouseCoreDNSImage = "lighthouse-coredns"
-	lighthouseCoreDNSName  = "submariner-lighthouse-coredns"
 )
 
 // Add creates a new ServiceDiscovery Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -338,8 +341,8 @@ func updateDNSConfigMap(client client.Client, k8sclientSet *clientset.Clientset,
 			return nil
 		}
 		lighthouseDnsService := &corev1.Service{}
-		err = client.Get(context.TODO(), types.NamespacedName{Name: lighthouseCoreDNSName, Namespace: cr.Namespace,}, lighthouseDnsService)
-		if (err != nil || lighthouseDnsService.Spec.ClusterIP == ""){
+		err = client.Get(context.TODO(), types.NamespacedName{Name: lighthouseCoreDNSName, Namespace: cr.Namespace}, lighthouseDnsService)
+		if err != nil || lighthouseDnsService.Spec.ClusterIP == ""{
 			return stderr.New("lighthouseDnsService ClusterIp should be available")
 		}
 		expectedCorefile := `#lighthouse
