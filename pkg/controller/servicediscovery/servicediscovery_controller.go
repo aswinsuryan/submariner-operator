@@ -342,7 +342,7 @@ func updateDNSConfigMap(client client.Client, k8sclientSet *clientset.Clientset,
 		}
 		lighthouseDnsService := &corev1.Service{}
 		err = client.Get(context.TODO(), types.NamespacedName{Name: lighthouseCoreDNSName, Namespace: cr.Namespace}, lighthouseDnsService)
-		if err != nil || lighthouseDnsService.Spec.ClusterIP == ""{
+		if err != nil || lighthouseDnsService.Spec.ClusterIP == "" {
 			return stderr.New("lighthouseDnsService ClusterIp should be available")
 		}
 		expectedCorefile := `#lighthouse

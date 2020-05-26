@@ -23,7 +23,7 @@ function connectivity_tests() {
     nginx_svc_ip=$(with_context cluster3 get_svc_ip nginx-demo)
 
     [[ "${lighthouse}" = "true" ]] || return 0
-    resolved_ip=$((kubectl exec "${netshoot_pod}" -- ping -c 1 -W 1 nginx-demo 2>/dev/null || :) \
+    resolved_ip=$((kubectl exec "${netshoot_pod}" -- ping -c 1 -W 1 nginx-demo.default.svc.supercluster.local 2>/dev/null || :) \
                   | grep PING | awk '{print $3}' | tr -d '()')
     if [[ "$resolved_ip" != "$nginx_svc_ip" ]]; then
         echo "Resolved IP $resolved_ip doesn't match the service ip $nginx_svc_ip"

@@ -34,7 +34,6 @@ import (
 
 const (
 	operatorImage           = "lighthouse-cluster-dns-operator"
-	coreDNSImage            = "lighthouse-coredns"
 	openShiftCoreDNSImage   = "openshift-lighthouse-coredns"
 	deploymentCheckInterval = 5 * time.Second
 	deploymentWaitTime      = 10 * time.Minute

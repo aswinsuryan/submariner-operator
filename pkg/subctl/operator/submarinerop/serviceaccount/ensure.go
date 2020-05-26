@@ -126,7 +126,7 @@ func ensureClusterRole(clientSet *clientset.Clientset, namespace string) (bool, 
 		return false, fmt.Errorf("ClusterRole update or create failed: %s", err)
 	}
 	result, err := utils.CreateOrUpdateClusterRole(clientSet, clusterRole)
-	if err != nil || result == false {
+	if err != nil || !result {
 		return false, err
 	}
 
@@ -144,7 +144,7 @@ func ensureClusterRoleBinding(clientSet *clientset.Clientset, namespace string) 
 		return false, fmt.Errorf("clusterRoleBinding update or create failed: %s", err)
 	}
 	result, err := utils.CreateOrUpdateClusterRoleBinding(clientSet, clusterRoleBinding)
-	if err != nil || result == false {
+	if err != nil || !result {
 		return false, err
 	}
 
