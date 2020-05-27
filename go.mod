@@ -7,12 +7,13 @@ require (
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.7
-	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.11.3 // indirect
 	github.com/kr/pty v1.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.0
+	github.com/openshift/api v0.0.0-20200526144822-34f54f12813a
+	github.com/openshift/cluster-dns-operator v0.0.0-20200520205719-66e4f14f76a0
 	github.com/operator-framework/operator-sdk v0.10.1-0.20191007233534-070d931e130a
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.2.1 // indirect
@@ -24,19 +25,18 @@ require (
 	go.uber.org/zap v1.12.0 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20191030062658-86caa796c7ab // indirect
 	google.golang.org/api v0.13.0 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6 // indirect
 	google.golang.org/grpc v1.24.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	k8s.io/api v0.0.0-20190918195907-bd6ac527cfd2
+	k8s.io/api v0.18.3
 	k8s.io/apiextensions-apiserver v0.0.0-20190918201827-3de75813f604
-	k8s.io/apimachinery v0.18.1
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/klog v0.4.0
-	k8s.io/kube-openapi v0.0.0-20190603182131-db7b694dc208
-	sigs.k8s.io/controller-runtime v0.3.0
+	k8s.io/klog v1.0.0
+	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
+	sigs.k8s.io/controller-runtime v0.3.1-0.20191011155846-b2bc3490f2e3
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -47,6 +47,7 @@ replace (
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d
 	k8s.io/client-go => k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.0.0-20190409023720-1bc0c81fa51d
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.3.0
 )
 
 replace (
