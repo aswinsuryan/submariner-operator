@@ -3,12 +3,19 @@ kind: ClusterRole
 metadata:
   name: submariner-operator:lighthouse
 rules:
-  # submariner-operator updates the config map of core-dns to forward requests to
-  # supercluster.local to Lighthouse DNS
   - apiGroups:
       - ""
     resources:
       - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+  - apiGroups:
+      - operator.openshift.io
+    resources:
+      - dnses
     verbs:
       - get
       - list

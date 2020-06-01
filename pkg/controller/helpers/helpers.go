@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	errorutil "github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -194,4 +195,48 @@ func ReconcileService(owner metav1.Object, service *corev1.Service, reqLogger lo
 	}
 
 	return service, errorutil.WithMessagef(err, "error creating or updating Service %s/%s", service.Namespace, service.Name)
+}
+
+func ReconcileClusterDNSOperator(owner metav1.Object, dnsOperator *operatorv1.DNS, reqLogger logr.Logger,
+	client client.Client, scheme *runtime.Scheme) (*operatorv1.DNS, error) {
+	var err error
+
+	// Set the owner and controller
+	if err = controllerutil.SetControllerReference(owner, dnsOperator, scheme); err != nil {
+		return nil, err
+	}
+
+	err = retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		toUpdate := &operatorv1.DNS{ObjectMeta: metav1.ObjectMeta{
+			Name:      dnsOperator.Name,
+			Labels:    dnsOperator.Labels,
+		}}
+
+		result, err := controllerutil.CreateOrUpdate(context.TODO(), client, toUpdate, func() error {
+			toUpdate.Spec = dnsOperator.Spec
+			for k, v := range dnsOperator.Labels {
+				toUpdate.Labels[k] = v
+			}
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+
+		if result == controllerutil.OperationResultCreated {
+			reqLogger.Info("Created a new Service", "DnsOperator.Name", dnsOperator.Name)
+		} else if result == controllerutil.OperationResultUpdated {
+			reqLogger.Info("Updated existing Service", "DnsOperator.Name", dnsOperator.Name)
+		}
+
+		return nil
+	})
+
+	// Update the status from the server
+	if err == nil {
+		err = client.Get(context.TODO(), types.NamespacedName{Name: dnsOperator.Name}, dnsOperator)
+	}
+
+	return dnsOperator, errorutil.WithMessagef(err, "error creating or updating Service %s", dnsOperator.Name)
 }
