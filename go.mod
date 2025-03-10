@@ -1,6 +1,7 @@
 module github.com/submariner-io/submariner-operator
 
 go 1.22.0
+toolchain go1.23.7
 
 require (
 	github.com/coreos/go-semver v0.3.1
@@ -16,7 +17,7 @@ require (
 	github.com/submariner-io/shipyard v0.20.0-m3
 	github.com/submariner-io/submariner v0.20.0-m3
 	golang.org/x/net v0.33.0
-	golang.org/x/text v0.21.0
+	golang.org/x/text v0.23.0
 	k8s.io/api v0.31.4
 	k8s.io/apiextensions-apiserver v0.31.3
 	k8s.io/apimachinery v0.31.4
