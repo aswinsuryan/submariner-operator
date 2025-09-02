@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the submariner-operator repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           path: submariner-operator
 
       - name: Check out the subctl repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: submariner-io/subctl
           path: subctl
@@ -26,7 +26,7 @@ jobs:
       - name: Check out the shipyard repository
         # This is required so that we can run a build involving multiple
         # repositories (using LOCAL_BUILD=1)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
         with:
           repository: submariner-io/shipyard
           path: shipyard
