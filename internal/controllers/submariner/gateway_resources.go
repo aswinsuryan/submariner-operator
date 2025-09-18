@@ -95,12 +95,32 @@ func newGatewayPodTemplate(cr *v1alpha1.Submariner, name string, podSelectorLabe
 		{Name: "ipsecd", MountPath: "/etc/ipsec.d", ReadOnly: false},
 		{Name: "ipsecnss", MountPath: "/var/lib/ipsec/nss", ReadOnly: false},
 		{Name: "libmodules", MountPath: "/lib/modules", ReadOnly: true},
+		{Name: "plutosocket", MountPath: "/var/run/pluto", ReadOnly: false},
+		{Name: "host-ipsec-bin", MountPath: "/host-ipsec-bin", ReadOnly: true},
+		{Name: "host-ipsec-libexec", MountPath: "/host-ipsec-libexec", ReadOnly: true},
+		{Name: "host-ipsec-lib", MountPath: "/host-ipsec/lib", ReadOnly: true},
 	}
 	volumes := []corev1.Volume{
-		{Name: "ipsecd", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
-		{Name: "ipsecnss", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+		{Name: "ipsecd", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
+			Path: "/etc/ipsec.d", Type: ptr.To(corev1.HostPathDirectoryOrCreate),
+		}}},
+		{Name: "ipsecnss", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
+			Path: "/var/lib/ipsec/nss", Type: ptr.To(corev1.HostPathDirectoryOrCreate),
+		}}},
 		{Name: "libmodules", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
 			Path: "/lib/modules", Type: ptr.To(corev1.HostPathDirectoryOrCreate),
+		}}},
+		{Name: "plutosocket", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
+			Path: "/var/run/pluto", Type: ptr.To(corev1.HostPathDirectoryOrCreate),
+		}}},
+		{Name: "host-ipsec-bin", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
+			Path: "/usr/sbin", Type: ptr.To(corev1.HostPathDirectory),
+		}}},
+		{Name: "host-ipsec-libexec", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
+			Path: "/usr/libexec/ipsec", Type: ptr.To(corev1.HostPathDirectory),
+		}}},
+		{Name: "host-ipsec-lib", VolumeSource: corev1.VolumeSource{HostPath: &corev1.HostPathVolumeSource{
+			Path: "/usr/lib64", Type: ptr.To(corev1.HostPathDirectory),
 		}}},
 	}
 

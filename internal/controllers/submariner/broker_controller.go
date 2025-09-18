@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/submariner-io/admiral/pkg/certificate"
 	"github.com/submariner-io/submariner-operator/api/v1alpha1"
 	"github.com/submariner-io/submariner-operator/pkg/crd"
 	"github.com/submariner-io/submariner-operator/pkg/discovery/clustersetip"
@@ -40,6 +41,7 @@ type BrokerReconciler struct {
 	ScopedClient  client.Client
 	GeneralClient client.Client
 	Config        *rest.Config
+	signer        certificate.Signer
 }
 
 //+kubebuilder:rbac:groups=submariner.io,resources=brokers,verbs=get;list;watch;create;update;patch;delete
@@ -65,7 +67,10 @@ func (r *BrokerReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 	}
 
 	if instance.ObjectMeta.DeletionTimestamp != nil {
-		// Graceful deletion has been requested, ignore the object
+		// Graceful deletion has been requested, stop certificate management
+		if r.signer != nil {
+			r.signer.Stop(request.Namespace)
+		}
 		return reconcile.Result{}, nil
 	}
 
@@ -107,7 +112,34 @@ func (r *BrokerReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 		return ctrl.Result{}, err //nolint:wrapcheck // Errors are already wrapped
 	}
 
+	// Certificate management setup
+	err = r.setupCertificateManagement(ctx, request.Namespace)
+	if err != nil {
+		return ctrl.Result{}, err //nolint:wrapcheck // Errors are already wrapped
+	}
+
 	return ctrl.Result{}, nil
+}
+
+// setupCertificateManagement creates CA certificate and starts CSR signer using Admiral's certificate APIs
+func (r *BrokerReconciler) setupCertificateManagement(ctx context.Context, namespace string) error {
+	// Create Admiral signer (only once)
+	if r.signer == nil {
+		var err error
+		r.signer, err = certificate.NewSigner(certificate.SignerConfig{
+			RestConfig: r.Config,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	// Start CSR signer for this namespace (CA will be issued automatically)
+	if err := r.signer.Start(ctx, namespace); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //nolint:wrapcheck // No need to wrap here.

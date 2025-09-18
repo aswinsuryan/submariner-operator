@@ -7,6 +7,8 @@ resources:
   - submariner-operator/cluster_role_binding.yaml
   - submariner-operator/ocp_cluster_role.yaml
   - submariner-operator/ocp_cluster_role_binding.yaml
+  - submariner-operator/certs-role.yaml
+  - submariner-operator/certs-role_binding.yaml
   - submariner-gateway/service_account.yaml
   - submariner-gateway/role.yaml
   - submariner-gateway/role_binding.yaml
