@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: submariner-certs-role-binding
+subjects:
+  - kind: ServiceAccount
+    name: submariner-operator
+roleRef:
+  kind: Role
+  name: submariner-certs-role
+  apiGroup: rbac.authorization.k8s.io

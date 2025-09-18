@@ -24,6 +24,8 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/submariner-io/submariner-operator/pkg/certs"
+
 	configv1 "github.com/openshift/api/config/v1"
 	"github.com/submariner-io/admiral/pkg/log/kzerolog"
 	"github.com/submariner-io/admiral/pkg/names"
@@ -225,6 +227,20 @@ func main() {
 		log.Error(err, "unable to create controller", "controller", "Submariner")
 		os.Exit(1)
 	}
+
+	// Register broker watcher controller to manage certificate controllers
+	log.Info("create controller", "controller", "BrokerWatcher")
+	log.Info("DEBUG: About to register BrokerWatcherReconciler")
+	if err := (&certs.BrokerWatcherReconciler{
+		Client:            mgr.GetClient(),
+		Log:               ctrl.Log.WithName("BrokerWatcher"),
+		Config:            cfg,
+		OperatorNamespace: namespace,
+	}).SetupWithManager(mgr); err != nil {
+		log.Error(err, "unable to create controller", "controller", "BrokerWatcher")
+		os.Exit(1)
+	}
+	log.Info("DEBUG: BrokerWatcherReconciler registered successfully")
 
 	if err = (&servicediscovery.Reconciler{
 		ScopedClient:  mgr.GetClient(),
