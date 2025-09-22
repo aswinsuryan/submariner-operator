@@ -21,22 +21,45 @@ package submariner_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/submariner-io/admiral/pkg/resource"
+	"github.com/submariner-io/admiral/pkg/syncer/test"
+	"github.com/submariner-io/admiral/pkg/util"
 	"github.com/submariner-io/submariner-operator/api/v1alpha1"
 	submarinerController "github.com/submariner-io/submariner-operator/internal/controllers/submariner"
-	"github.com/submariner-io/submariner-operator/internal/controllers/test"
+	controllerTest "github.com/submariner-io/submariner-operator/internal/controllers/test"
 	"github.com/submariner-io/submariner-operator/pkg/discovery/globalnet"
+	corev1 "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
+	dynamicfake "k8s.io/client-go/dynamic/fake"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const brokerName = "test-broker"
 
 var _ = Describe("Broker controller tests", func() {
-	t := test.Driver{
+	t := controllerTest.Driver{
 		Namespace:    submarinerNamespace,
 		ResourceName: brokerName,
 	}
+
+	var fakeDynClient *dynamicfake.FakeDynamicClient
+
+	BeforeEach(func() {
+		fakeDynClient = dynamicfake.NewSimpleDynamicClient(scheme.Scheme)
+
+		resource.NewDynamicClient = func(_ *rest.Config) (dynamic.Interface, error) {
+			return fakeDynClient, nil
+		}
+
+		util.BuildRestMapper = func(_ *rest.Config) (meta.RESTMapper, error) {
+			return test.GetRESTMapperFor(&corev1.Secret{}), nil
+		}
+	})
 
 	var broker *v1alpha1.Broker
 
@@ -63,6 +86,9 @@ var _ = Describe("Broker controller tests", func() {
 		t.Controller = &submarinerController.BrokerReconciler{
 			ScopedClient:  t.ScopedClient,
 			GeneralClient: t.GeneralClient,
+			Config: &rest.Config{
+				Host: "https://test-cluster",
+			},
 		}
 	})
 
