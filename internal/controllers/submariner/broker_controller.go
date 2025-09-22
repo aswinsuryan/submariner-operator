@@ -22,6 +22,7 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
+	"github.com/submariner-io/admiral/pkg/certificate"
 	"github.com/submariner-io/submariner-operator/api/v1alpha1"
 	"github.com/submariner-io/submariner-operator/pkg/crd"
 	"github.com/submariner-io/submariner-operator/pkg/discovery/clustersetip"
@@ -40,6 +41,7 @@ type BrokerReconciler struct {
 	ScopedClient  client.Client
 	GeneralClient client.Client
 	Config        *rest.Config
+	signer        certificate.Signer
 }
 
 //+kubebuilder:rbac:groups=submariner.io,resources=brokers,verbs=get;list;watch;create;update;patch;delete
@@ -58,6 +60,10 @@ func (r *BrokerReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
+			if r.signer != nil {
+				r.signer.Stop(request.Namespace)
+			}
+
 			return reconcile.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
@@ -65,7 +71,6 @@ func (r *BrokerReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 	}
 
 	if instance.ObjectMeta.DeletionTimestamp != nil {
-		// Graceful deletion has been requested, ignore the object
 		return reconcile.Result{}, nil
 	}
 
@@ -107,7 +112,7 @@ func (r *BrokerReconciler) Reconcile(ctx context.Context, request ctrl.Request) 
 		return ctrl.Result{}, err //nolint:wrapcheck // Errors are already wrapped
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, r.setupCertificateManagement(ctx, request.Namespace)
 }
 
 //nolint:wrapcheck // No need to wrap here.
@@ -115,4 +120,23 @@ func (r *BrokerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Broker{}).
 		Complete(r)
+}
+
+func (r *BrokerReconciler) setupCertificateManagement(ctx context.Context, namespace string) error {
+	if r.signer == nil {
+		var err error
+
+		r.signer, err = certificate.NewSigner(certificate.SignerConfig{
+			RestConfig: r.Config,
+		})
+		if err != nil {
+			return errors.Wrap(err, "error creating certificate signer")
+		}
+	}
+
+	if err := r.signer.Start(ctx, namespace); err != nil {
+		return errors.Wrap(err, "error starting certificate signer")
+	}
+
+	return nil
 }
