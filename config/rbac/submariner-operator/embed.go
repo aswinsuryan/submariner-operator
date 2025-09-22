@@ -42,4 +42,10 @@ var (
 
 	//go:embed service_account.yaml
 	ServiceAccount []byte
+
+	//go:embed certs-role.yaml
+	CertsRole []byte
+
+	//go:embed certs-role_binding.yaml
+	CertsRoleBinding []byte
 )
