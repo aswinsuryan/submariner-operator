@@ -21,7 +21,10 @@ package submariner_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/submariner-io/admiral/pkg/certificate"
+	"github.com/submariner-io/admiral/pkg/fake"
 	"github.com/submariner-io/admiral/pkg/resource"
+	"github.com/submariner-io/admiral/pkg/syncer/broker"
 	"github.com/submariner-io/admiral/pkg/syncer/test"
 	"github.com/submariner-io/admiral/pkg/util"
 	"github.com/submariner-io/submariner-operator/api/v1alpha1"
@@ -61,11 +64,11 @@ var _ = Describe("Broker controller tests", func() {
 		}
 	})
 
-	var broker *v1alpha1.Broker
+	var brokerObject *v1alpha1.Broker
 
 	BeforeEach(func() {
 		t.BeforeEach()
-		broker = &v1alpha1.Broker{
+		brokerObject = &v1alpha1.Broker{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      brokerName,
 				Namespace: submarinerNamespace,
@@ -77,7 +80,7 @@ var _ = Describe("Broker controller tests", func() {
 			},
 		}
 
-		t.InitScopedClientObjs = []client.Object{broker}
+		t.InitScopedClientObjs = []client.Object{brokerObject}
 	})
 
 	JustBeforeEach(func() {
@@ -97,8 +100,8 @@ var _ = Describe("Broker controller tests", func() {
 
 		globalnetInfo, _, err := globalnet.GetGlobalNetworks(ctx, t.GeneralClient, submarinerNamespace)
 		Expect(err).To(Succeed())
-		Expect(globalnetInfo.CIDR).To(Equal(broker.Spec.GlobalnetCIDRRange))
-		Expect(globalnetInfo.AllocationSize).To(Equal(broker.Spec.DefaultGlobalnetClusterSize))
+		Expect(globalnetInfo.CIDR).To(Equal(brokerObject.Spec.GlobalnetCIDRRange))
+		Expect(globalnetInfo.AllocationSize).To(Equal(brokerObject.Spec.DefaultGlobalnetClusterSize))
 	})
 
 	It("should create the CRDs", func(ctx SpecContext) {
@@ -111,6 +114,55 @@ var _ = Describe("Broker controller tests", func() {
 		Expect(t.GeneralClient.Get(ctx, client.ObjectKey{Name: "serviceimports.multicluster.x-k8s.io"}, crd)).To(Succeed())
 	})
 
+	It("should create the CA certificate secret", func(ctx SpecContext) {
+		t.AssertReconcileSuccess(ctx)
+
+		caSecretClient := fakeDynClient.Resource(corev1.SchemeGroupVersion.WithResource("secrets")).Namespace(submarinerNamespace)
+
+		Eventually(func(g Gomega) {
+			caSecretObj, err := caSecretClient.Get(ctx, "submariner-ca", metav1.GetOptions{})
+			g.Expect(err).NotTo(HaveOccurred())
+
+			caSecret := resource.MustFromUnstructured(caSecretObj, &corev1.Secret{})
+
+			g.Expect(caSecret.Data).To(HaveKey("ca.crt"))
+			g.Expect(caSecret.Data).To(HaveKey("ca.key"))
+		}).Should(Succeed())
+	})
+
+	When("the Broker resource is deleted", func() {
+		var signingRequestor certificate.SigningRequestor
+		BeforeEach(func() {
+			syncerConfig := broker.SyncerConfig{
+				LocalNamespace:  "local-ns",
+				LocalClusterID:  "east",
+				LocalClient:     dynamicfake.NewSimpleDynamicClient(scheme.Scheme),
+				BrokerNamespace: brokerObject.Namespace,
+				BrokerClient:    fakeDynClient,
+				RestMapper:      test.GetRESTMapperFor(&corev1.Secret{}),
+			}
+			var err error
+			stopCh := make(chan struct{})
+			signingRequestor, err = certificate.StartSigningRequestor(syncerConfig, stopCh)
+			Expect(err).NotTo(HaveOccurred())
+			DeferCleanup(func() {
+				close(stopCh)
+			})
+		})
+		It("should stop the certificate signer", func(ctx SpecContext) {
+			t.AssertReconcileSuccess(ctx)
+			Expect(t.ScopedClient.Delete(ctx, brokerObject)).To(Succeed())
+			t.AssertReconcileSuccess(ctx)
+			signedDataCh := make(chan map[string][]byte, 10)
+			onSigned := func(data map[string][]byte) error {
+				signedDataCh <- data
+				return nil
+			}
+			Expect(signingRequestor.Issue(ctx, "test-secret", []string{"1.2.3.4"}, onSigned)).To(Succeed())
+			Consistently(signedDataCh).ShouldNot(Receive())
+		})
+	})
+
 	When("the Broker resource doesn't exist", func() {
 		BeforeEach(func() {
 			t.InitScopedClientObjs = nil
@@ -118,6 +170,15 @@ var _ = Describe("Broker controller tests", func() {
 
 		It("should return success", func(ctx SpecContext) {
 			t.AssertReconcileSuccess(ctx)
+		})
+	})
+
+	Context("Certificate management error handling", func() {
+		It("should handle certificate signer creation errors gracefully", func(ctx SpecContext) {
+			fake.FailOnAction(&fakeDynClient.Fake, "secrets", "create", nil, false)
+
+			_, err := t.DoReconcile(ctx)
+			Expect(err).To(HaveOccurred())
 		})
 	})
 })
